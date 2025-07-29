@@ -2,11 +2,15 @@ package fr.codecake.airbnbclone.infraestructure.config;
 
 import fr.codecake.airbnbclone.user.domain.Authority;
 import fr.codecake.airbnbclone.user.domain.User;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SecurityUtils {
     public static final String ROLE_TENANT = "ROLE_TENANT";
@@ -59,4 +63,28 @@ public class SecurityUtils {
         return user;
     }
 
+    public static List<SimpleGrantedAuthority> extractAuthorityFromClaims(Map<String, Object> claims) {
+        return mapRolesToGrantedAuthorities(getRolesFromClaims(claims));
+    }
+
+    private static Collection<String> getRolesFromClaims(Map<String, Object> claims) {
+        return (List<String>) claims.get(CLAIMS_NAMESPACE);
+    }
+
+    private static List<SimpleGrantedAuthority> mapRolesToGrantedAuthorities(Collection<String> roles) {
+        return roles.stream().filter(role -> role.startsWith("ROLE_")).map(SimpleGrantedAuthority::new).toList();
+    }
+
+    public static boolean hasCurrentUserAnyOfAuthorities(String ...authorities) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (authentication != null && getAuthorities(authentication)
+                .anyMatch(authority -> Arrays.asList(authorities).contains(authority)));
+    }
+
+    private static Stream<String> getAuthorities(Authentication authentication) {
+        Collection<? extends GrantedAuthority> authorities = authentication
+                instanceof JwtAuthenticationToken jwtAuthenticationToken ?
+                extractAuthorityFromClaims(jwtAuthenticationToken.getToken().getClaims()) : authentication.getAuthorities();
+        return authorities.stream().map(GrantedAuthority::getAuthority);
+    }
 }

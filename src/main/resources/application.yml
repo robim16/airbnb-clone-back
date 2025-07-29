@@ -11,6 +11,10 @@ spring:
     name: airbnb-clone-back
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
+    url: jdbc:postgresql://localhost:5434/airbnb-clone-spring
+    username: postgres
+    password: Shekina1
+    driver-class-name: org.postgresql.Driver
     hikari:
       poolName: Hikari
       auto-commit: false
@@ -24,11 +28,13 @@ spring:
       ddl-auto: validate
     properties:
       hibernate:
-        default_schema: airbnb_clone
+        default_schema: public
+        #default_schema: airbnb_clone
   liquibase:
     contexts: dev
     change-log: classpath:db/changelog/master.xml
-    default-schema: airbnb_clone
+    default-schema: public
+    #default-schema: airbnb_clone
     enabled: true
   #    drop-first: true
   servlet:
